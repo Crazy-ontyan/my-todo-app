@@ -1,11 +1,20 @@
 'use client'
 
+import { todo } from 'node:test';
 import { useState, useEffect } from 'react'
 
+interface Todo{
+  id: number;
+  text: string;
+  completed: boolean;
+}
+
 export default function Home() {
-  const [todos, setTodos]:any = useState([])
+  const [todos, setTodos] = useState<Todo[]>([])
   const [inputValue, setInputValue] = useState('')
   const [isLoaded, setIsLoaded] = useState(false)
+
+  const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
 
   // 初回読み込み時にLocalStorageからデータを取得
   useEffect(() => {
@@ -34,6 +43,12 @@ export default function Home() {
   const completedTodos = todos.filter((todo:any) => todo.completed).length
   const activeTodos = totalTodos - completedTodos
 
+  const filteredTodos = todos.filter(todo => {
+    if (filter === 'completed') return todo.completed;
+    if (filter === 'active') return !todo.completed;
+    return true; // 'all'
+  });
+
   const addTodo = () => {
     if (inputValue.trim() === '') return
     const newTodo = {
@@ -45,8 +60,17 @@ export default function Home() {
     setInputValue('')
   }
 
-  const deleteTodo = (id:any) => {
+  const deleteTodo = (id:number) => {
     setTodos(todos.filter((todo:any) => todo.id !== id))
+  }
+
+  const editTodo = (id:number,text:string) => {
+    const userInput = window.prompt("テキストを入力してください", `${text}`);
+    setTodos(
+      todos.map((todo:any) =>
+        todo.id === id ? {...todo, text: userInput } : todo
+      )
+    )
   }
 
   const toggleTodo = (id:any) => {
@@ -92,9 +116,34 @@ export default function Home() {
           <div className="bg-white rounded-lg shadow-md p-4 text-center">
             <p className="text-2xl font-bold text-green-600">{completedTodos}</p>
             <p className="text-sm text-gray-600">完了</p>
-          </div>
+         </div>
         </div>
-        
+
+        <div className="flex gap-2 mb-3">
+          <button className={`px-4 py-2 rounded-full text-sm font-medium ${filter === 'all'
+             ? 'bg-blue-600 text-white'
+             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`} 
+          onClick={() => setFilter('all')}>
+            全て
+          </button>
+          <button className={`px-4 py-2 rounded-full text-sm font-medium ${filter === 'completed'
+             ? 'bg-blue-600 text-white'
+             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`} 
+          onClick={() => setFilter('completed')}>
+            完了
+          </button>
+          <button className={`px-4 py-2 rounded-full text-sm font-medium ${filter === 'active'
+             ? 'bg-blue-600 text-white'
+             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`} 
+          onClick={() => setFilter('active')}>
+            未完了
+          </button>
+        </div>
+
+          
         <div className="bg-white rounded-lg shadow-md p-6 mb-4">
           <div className="flex gap-2">
             <input
@@ -115,13 +164,13 @@ export default function Home() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6">
-          {todos.length === 0 ? (
+          {filteredTodos.length === 0 ? (
             <p className="text-gray-400 text-center py-8">
               Todoがありません。追加してみましょう！
             </p>
           ) : (
             <ul className="space-y-2">
-              {todos.map((todo:any) => (
+              {filteredTodos.map((todo:any) => (
                 <li 
                   key={todo.id}
                   className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
@@ -142,6 +191,12 @@ export default function Home() {
                     {todo.text}
                   </span>
                   <button
+                    onClick={() => editTodo(todo.id,todo.text)}
+                    className='px-3 py-1 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors'
+                  >
+                    ✒ 編集
+                  </button>
+                  <button
                     onClick={() => deleteTodo(todo.id)}
                     className="px-3 py-1 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors"
                   >
@@ -155,4 +210,6 @@ export default function Home() {
       </div>
     </main>
   )
+
+
 }
