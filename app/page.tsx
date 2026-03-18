@@ -1,5 +1,6 @@
 'use client'
 
+import { Cactus_Classical_Serif } from 'next/font/google';
 import { todo } from 'node:test';
 import { useState, useEffect } from 'react'
 
@@ -7,6 +8,7 @@ interface Todo{
   id: number;
   text: string;
   completed: boolean;
+  category: string;
 }
 
 export default function Home() {
@@ -15,6 +17,9 @@ export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false)
 
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all')
+  const [category, setCategory] = useState<'work' | 'private' | 'all' >('all')
+
+  const [isOpen, setIsOpen] = useState(false);
 
   // 初回読み込み時にLocalStorageからデータを取得
   useEffect(() => {
@@ -24,9 +29,9 @@ export default function Home() {
     } else {
       // 初期データをセット
       setTodos([
-        { id: 1, text: '最初のTodo', completed: false },
-        { id: 2, text: 'Next.jsを学ぶ', completed: false },
-        { id: 3, text: 'Todoアプリを完成させる', completed: false },
+        { id: 1, text: '最初のTodo', completed: false, category: 'work' },
+        { id: 2, text: 'Next.jsを学ぶ', completed: false, category: 'private' },
+        { id: 3, text: 'Todoアプリを完成させる', completed: false, category: 'none' },
       ])
     }
     setIsLoaded(true)
@@ -49,12 +54,20 @@ export default function Home() {
     return true; // 'all'
   });
 
+  const secondFilteredTodos = filteredTodos.filter(todo => {
+    if (category === 'work') return todo.category === 'work';
+    if (category === 'private') return todo.category === 'private';
+    return true; // 'all'
+  });
+
   const addTodo = () => {
     if (inputValue.trim() === '') return
+    const newTodoCategory = window.prompt
     const newTodo = {
       id: Date.now(),
       text: inputValue,
       completed: false,
+      category: 'none',
     }
     setTodos([...todos, newTodo])
     setInputValue('')
@@ -119,28 +132,59 @@ export default function Home() {
          </div>
         </div>
 
-        <div className="flex gap-2 mb-3">
-          <button className={`px-4 py-2 rounded-full text-sm font-medium ${filter === 'all'
-             ? 'bg-blue-600 text-white'
-             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`} 
-          onClick={() => setFilter('all')}>
-            全て
+        <div className='mb-3'>
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="px-6 py-2 bg-zinc-400 text-white rounded-lg hover:bg-black transition"
+          >
+            {isOpen ? "フィルターを閉じる" : "フィルターを開く"}
           </button>
-          <button className={`px-4 py-2 rounded-full text-sm font-medium ${filter === 'completed'
-             ? 'bg-blue-600 text-white'
-             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`} 
-          onClick={() => setFilter('completed')}>
-            完了
-          </button>
-          <button className={`px-4 py-2 rounded-full text-sm font-medium ${filter === 'active'
-             ? 'bg-blue-600 text-white'
-             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`} 
-          onClick={() => setFilter('active')}>
-            未完了
-          </button>
+          {isOpen && (
+            <div className="flex-col p-4 bg-gray-100 rounded-xl animate-in fade-in slide-in-from-top-2">
+              <div className='flex gap-2 mb-2'>
+                {["all", "completed", "active"].map((cat:any) => (
+                  <button
+                    key={cat}
+                    onClick={() => setFilter(cat)}
+                    className={`px-4 py-1 rounded-full border ${
+                      filter === cat ? "bg-black text-white" : "bg-white text-gray-600"
+                    }`}
+                  >
+                    {cat === 'all' && (
+                      <span>全て</span>
+                    )}
+                    {cat === 'completed' && (
+                      <span>完了</span>
+                    )}
+                    {cat === 'active' && (
+                      <span>未完了</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+              <div className='flex gap-2'>
+                {["all", "work", "private"].map((cat:any) => (
+                  <button
+                    key={cat}
+                    onClick={() => setCategory(cat)}
+                    className={`px-4 py-1 rounded-full border ${
+                      category === cat ? "bg-black text-white" : "bg-white text-gray-600"
+                    }`}
+                  >
+                    {cat === 'all' && (
+                      <span>全て</span>
+                    )}
+                    {cat === 'work' && (
+                      <span>仕事</span>
+                    )}
+                    {cat === 'private' && (
+                      <span>プライベート</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
           
@@ -164,13 +208,13 @@ export default function Home() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6">
-          {filteredTodos.length === 0 ? (
+          {secondFilteredTodos.length === 0 ? (
             <p className="text-gray-400 text-center py-8">
               Todoがありません。追加してみましょう！
             </p>
           ) : (
             <ul className="space-y-2">
-              {filteredTodos.map((todo:any) => (
+              {secondFilteredTodos.map((todo:any) => (
                 <li 
                   key={todo.id}
                   className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
