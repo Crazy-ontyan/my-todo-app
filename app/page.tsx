@@ -3,12 +3,20 @@
 import { Cactus_Classical_Serif } from 'next/font/google';
 import { todo } from 'node:test';
 import { useState, useEffect } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 
 interface Todo{
   id: number;
   text: string;
   completed: boolean;
-  category: string;
+  category: 'work' | 'private' | 'none';
 }
 
 export default function Home() {
@@ -20,6 +28,8 @@ export default function Home() {
   const [category, setCategory] = useState<'work' | 'private' | 'all' >('all')
 
   const [isOpen, setIsOpen] = useState(false);
+
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
   // 初回読み込み時にLocalStorageからデータを取得
   useEffect(() => {
@@ -49,28 +59,26 @@ export default function Home() {
   const activeTodos = totalTodos - completedTodos
 
   const filteredTodos = todos.filter(todo => {
-    if (filter === 'completed') return todo.completed;
-    if (filter === 'active') return !todo.completed;
-    return true; // 'all'
+    const matchesStatus = filter === 'all' || (filter === 'completed' ? todo.completed : !todo.completed);
+    const matchesCategory = category === 'all' || todo.category === category;
+    return matchesStatus && matchesCategory;
   });
 
-  const secondFilteredTodos = filteredTodos.filter(todo => {
-    if (category === 'work') return todo.category === 'work';
-    if (category === 'private') return todo.category === 'private';
-    return true; // 'all'
-  });
+  const openAddModal = () => {
+    if (inputValue.trim() === '') return;
+    setIsAddModalOpen(true); // カテゴリ選択モーダルを開く
+  };
 
-  const addTodo = () => {
-    if (inputValue.trim() === '') return
-    const newTodoCategory = window.prompt
-    const newTodo = {
+  const confirmAddTodo = (selectedCat: 'work' | 'private' | 'none') => {
+    const newTodo: Todo = {
       id: Date.now(),
       text: inputValue,
       completed: false,
-      category: 'none',
+      category: selectedCat,
     }
     setTodos([...todos, newTodo])
     setInputValue('')
+    setIsAddModalOpen(false) // モーダルを閉じる
   }
 
   const deleteTodo = (id:number) => {
@@ -92,10 +100,6 @@ export default function Home() {
         todo.id === id ? { ...todo, completed: !todo.completed } : todo
       )
     )
-  }
-
-  const handleKeyPress = (e:any) => {
-    if (e.key === 'Enter') addTodo()
   }
 
   // データ読み込み中は表示しない
@@ -194,27 +198,37 @@ export default function Home() {
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={(e) => e.key === 'Enter' && openAddModal()}
               placeholder="新しいTodoを入力..."
               className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <button
-              onClick={addTodo}
-              className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
-            >
-              追加
-            </button>
+            {/* shadcn Dialog を使ったカテゴリ選択 */}
+            <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+              <Button onClick={openAddModal} className="bg-blue-500 hover:bg-blue-600 text-white p-5">
+                追加
+              </Button>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>カテゴリを選んで追加</DialogTitle>
+                </DialogHeader>
+                <div className="grid grid-cols-3 gap-3 py-4">
+                  <Button variant="outline" onClick={() => confirmAddTodo('work')}>💼 仕事</Button>
+                  <Button variant="outline" onClick={() => confirmAddTodo('private')}>🏠 個人</Button>
+                  <Button variant="secondary" onClick={() => confirmAddTodo('none')}>指定なし</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6">
-          {secondFilteredTodos.length === 0 ? (
+          {filteredTodos.length === 0 ? (
             <p className="text-gray-400 text-center py-8">
               Todoがありません。追加してみましょう！
             </p>
           ) : (
             <ul className="space-y-2">
-              {secondFilteredTodos.map((todo:any) => (
+              {filteredTodos.map((todo:any) => (
                 <li 
                   key={todo.id}
                   className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
